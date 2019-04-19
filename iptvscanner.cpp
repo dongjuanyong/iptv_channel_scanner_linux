@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -25,6 +26,12 @@ using namespace std;
 
 char nicname[20] = {0};
 char srcip[20] = {0};
+pcap_t *device;
+void alarm_handler(int sig)
+{
+    pcap_breakloop(device);
+}
+
 int iptvscan(unsigned int ip)
 {
     char errBuf[PCAP_ERRBUF_SIZE];
@@ -47,7 +54,7 @@ int iptvscan(unsigned int ip)
         return -1;
     }
 
-    pcap_t *device = pcap_open_live(nicname, 65535, 1, 1, errBuf); //1ms超时，下边会留出时间填充数据包
+    device = pcap_open_live(nicname, 65535, 1, 1, errBuf); //1ms超时，下边会留出时间填充数据包
 
     if (!device)
     {
@@ -64,6 +71,8 @@ int iptvscan(unsigned int ip)
     pcap_setfilter(device, &filter);
 
     usleep(150000);
+    alarm(3);
+    signal(SIGALRM, alarm_handler);
     struct pcap_pkthdr packet;
     const u_char *pktStr = pcap_next(device, &packet);
     if (pktStr)
