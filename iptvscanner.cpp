@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    cout << "Enter the interface number (1-%d):";
+    printf("Enter the interface number (1-%d):", i);
     cin >> inum;
 
     if (inum < 1 || inum > i)
