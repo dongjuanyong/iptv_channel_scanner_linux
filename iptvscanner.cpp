@@ -17,14 +17,15 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <iostream>
 using namespace std;
 
-char nicname[1024] = {0};
+char nicname[20] = {0};
+char srcip[20] = {0};
 int iptvscan(unsigned int ip)
-
 {
     char errBuf[PCAP_ERRBUF_SIZE];
     int s; /*套接字文件描述符*/
@@ -38,7 +39,7 @@ int iptvscan(unsigned int ip)
 
     struct ip_mreq mreq;                           /*加入多播组*/
     mreq.imr_multiaddr.s_addr = ip;         /*多播地址*/
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY); /*网络接口为默认*/
+    mreq.imr_interface.s_addr = inet_addr(srcip); /*网络接口为默认*/
 
     err = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (err < 0)
@@ -141,6 +142,19 @@ int main(int argc, char *argv[])
         ;
     strncpy(nicname, d->name, sizeof(nicname));
     pcap_freealldevs(alldevs);
+
+    int fd;
+ 	struct ifreq ifr;
+
+ 	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	ifr.ifr_addr.sa_family = AF_INET;
+
+	strncpy(ifr.ifr_name, nicname, IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFADDR, &ifr);
+	close(fd);
+
+	strncpy(srcip, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr), sizeof(srcip));
+
     unsigned int ipstart = 0, ipend = 0;
     inet_pton(AF_INET, argv[1], &ipstart);
     inet_pton(AF_INET, argv[2], &ipend);
