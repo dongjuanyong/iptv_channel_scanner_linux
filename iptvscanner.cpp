@@ -24,8 +24,8 @@
 #include <iostream>
 using namespace std;
 
-char nicname[20] = {0};
-char srcip[20] = {0};
+char nicname[IFNAMSIZ];
+int srcip;
 pcap_t *device;
 void alarm_handler(int sig)
 {
@@ -46,8 +46,8 @@ int iptvscan(unsigned int ip)
 
     struct ip_mreq mreq;                           /*加入多播组*/
     mreq.imr_multiaddr.s_addr = ip;         /*多播地址*/
-    mreq.imr_interface.s_addr = inet_addr(srcip); /*网络接口IP*/
-
+    mreq.imr_interface.s_addr = srcip; /*网络接口IP*/
+    
     err = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (err < 0)
     {
@@ -71,8 +71,10 @@ int iptvscan(unsigned int ip)
     pcap_setfilter(device, &filter);
 
     usleep(150000);
-    alarm(3);
+
+    alarm(1);
     signal(SIGALRM, alarm_handler);
+
     struct pcap_pkthdr packet;
     const u_char *pktStr = pcap_next(device, &packet);
     if (pktStr)
@@ -145,11 +147,11 @@ int main(int argc, char *argv[])
         pcap_freealldevs(alldevs);
         return -1;
     }
-    cout << "#EXTM3U name=\"bj-unicom-iptv\"" << endl;
+    cout << "#EXTM3U name=\"hb-cmcc-iptv\"" << endl;
     /* 跳转到选中的适配器 */
     for (d = alldevs, i = 0; i < inum - 1; d = d->next, i++)
         ;
-    strncpy(nicname, d->name, sizeof(nicname));
+    strncpy(nicname, d->name, IFNAMSIZ-1);
     pcap_freealldevs(alldevs);
 
     int fd;
@@ -159,7 +161,7 @@ int main(int argc, char *argv[])
     strncpy(ifr.ifr_name, nicname, IFNAMSIZ-1);
     ioctl(fd, SIOCGIFADDR, &ifr);
     close(fd);
-    strncpy(srcip, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr), sizeof(srcip));
+    srcip = (((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr).s_addr;
 
     unsigned int ipstart = 0, ipend = 0;
     inet_pton(AF_INET, argv[1], &ipstart);
