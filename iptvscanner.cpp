@@ -47,7 +47,7 @@ int iptvscan(unsigned int ip)
     struct ip_mreq mreq;                           /*加入多播组*/
     mreq.imr_multiaddr.s_addr = ip;         /*多播地址*/
     mreq.imr_interface.s_addr = srcip; /*网络接口IP*/
-    
+
     err = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (err < 0)
     {
