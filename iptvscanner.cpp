@@ -39,7 +39,7 @@ int iptvscan(unsigned int ip)
 
     struct ip_mreq mreq;                           /*加入多播组*/
     mreq.imr_multiaddr.s_addr = ip;         /*多播地址*/
-    mreq.imr_interface.s_addr = inet_addr(srcip); /*网络接口为默认*/
+    mreq.imr_interface.s_addr = inet_addr(srcip); /*网络接口IP*/
 
     err = setsockopt(s, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
     if (err < 0)
@@ -144,16 +144,13 @@ int main(int argc, char *argv[])
     pcap_freealldevs(alldevs);
 
     int fd;
- 	struct ifreq ifr;
-
- 	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	ifr.ifr_addr.sa_family = AF_INET;
-
-	strncpy(ifr.ifr_name, nicname, IFNAMSIZ-1);
-	ioctl(fd, SIOCGIFADDR, &ifr);
-	close(fd);
-
-	strncpy(srcip, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr), sizeof(srcip));
+    struct ifreq ifr;
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, nicname, IFNAMSIZ-1);
+    ioctl(fd, SIOCGIFADDR, &ifr);
+    close(fd);
+    strncpy(srcip, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr), sizeof(srcip));
 
     unsigned int ipstart = 0, ipend = 0;
     inet_pton(AF_INET, argv[1], &ipstart);
